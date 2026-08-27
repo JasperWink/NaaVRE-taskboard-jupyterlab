@@ -53,7 +53,7 @@ jobs:
         pip uninstall -y "NaaVRE_taskboard_jupyterlab" jupyterlab
 
     - name: Upload extension packages
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: extension-artifacts
         path: dist/naavre_taskboard_jupyterlab*
@@ -136,7 +136,7 @@ jobs:
 
     - name: Upload Playwright Test report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: NaaVRE_taskboard_jupyterlab-playwright-tests
         path: |
