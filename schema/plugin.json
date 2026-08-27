@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "@naavre/taskboard-jupyterlab",
+  "description": "@naavre/taskboard-jupyterlab settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}

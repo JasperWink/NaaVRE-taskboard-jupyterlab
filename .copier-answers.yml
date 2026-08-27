@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.3.6
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: jasper.wink@student.uva.nl
+author_name: University of Amsterdam
+has_binder: false
+has_settings: true
+kind: frontend
+labextension_name: '@naavre/taskboard-jupyterlab'
+project_short_description: NaaVRE collaborative task board on Jupyter Lab
+python_name: NaaVRE_taskboard_jupyterlab
+repository: https://github.com/JasperWink/NaaVRE-taskboard-jupyterlab
+test: true
+
