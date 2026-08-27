@@ -1,0 +1,88 @@
+/* Task planning board (Kanban) left-sidebar panel. */
+
+.naavre-task-board-widget {
+  min-width: 300px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Left activity-bar launcher (opens the board in the main area). */
+.naavre-task-board-launcher {
+  min-width: 180px;
+}
+
+.naavre-task-board-launcher-msg {
+  padding: 16px;
+  color: var(--jp-ui-font-color2);
+  font-size: var(--jp-ui-font-size1);
+}
+
+.naavre-task-board {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--jp-layout-color1);
+  color: var(--jp-ui-font-color1);
+}
+
+.naavre-task-board-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--jp-border-color2);
+}
+
+.naavre-task-board-columns {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px;
+  overflow: auto hidden;
+  flex: 1;
+  align-items: flex-start;
+}
+
+.naavre-task-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  max-width: 260px;
+  max-height: 100%;
+  background: var(--jp-layout-color2);
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 6px;
+}
+
+.naavre-task-column-over {
+  border-color: #3c8f49;
+  box-shadow: 0 0 0 1px #3c8f49 inset;
+}
+
+.naavre-task-column-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--jp-border-color2);
+}
+
+.naavre-task-column-body {
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.naavre-task-add-column {
+  min-width: 200px;
+  background: transparent;
+  border-style: dashed;
+}
+
+.naavre-task-card {
+  background: var(--jp-layout-color1);
+}
+
+.naavre-task-card:active {
+  cursor: grabbing;
+}

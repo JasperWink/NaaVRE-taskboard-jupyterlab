@@ -17,6 +17,13 @@ const baseConfig = jestJupyterLab(__dirname);
 module.exports = {
   ...baseConfig,
   automock: false,
+  // Both the built labextension and an editable install's copy of it carry a
+  // package.json with this package's own "name", which jest's haste map
+  // reports as a duplicate-module collision. Neither is a source tree.
+  modulePathIgnorePatterns: [
+    '<rootDir>/venv/',
+    '<rootDir>/NaaVRE_taskboard_jupyterlab/labextension/'
+  ],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',

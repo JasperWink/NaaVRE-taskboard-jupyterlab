@@ -136,3 +136,9 @@ notebook-dir/
 
 # Yjs store written by jupyter-collaboration at runtime
 .jupyter_ystore.db
+
+# Local dev virtualenv
+venv/
+
+# jest JUnit reporter output
+junit.xml
