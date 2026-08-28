@@ -14,11 +14,13 @@ import { IBoardState, ICategory, ITask } from './types';
 import {
   addCategory,
   addColumn,
+  addPerson,
   addTask,
   buildCards,
   cardsForColumn,
   deleteCategory,
   deleteColumn,
+  deletePerson,
   deleteTask,
   orderForInsertion,
   renameColumn,
@@ -85,6 +87,10 @@ export function TaskBoard({
     onDragEnd: () => setDraggingCard(null),
     onSetAssignees: (card: ITask, assignees: string[]) =>
       updateBoard((b: IBoardState) => updateTask(b, card.id, { assignees })),
+    onCreatePerson: (name: string) =>
+      updateBoard((b: IBoardState) => addPerson(b, name)),
+    onDeletePerson: (name: string) =>
+      updateBoard((b: IBoardState) => deletePerson(b, name)),
     onSetCategories: (card: ITask, categoryIds: string[]) =>
       updateBoard((b: IBoardState) => updateTask(b, card.id, { categoryIds })),
     onCreateCategory: (category: ICategory) =>
@@ -127,6 +133,7 @@ export function TaskBoard({
                 column={column}
                 cards={cardsForColumn(cards, column.id)}
                 categories={board.categories}
+                people={board.people}
                 canDelete={board.columns.length > 1}
                 draggingCard={draggingCard}
                 onDropCard={handleDropCard}

@@ -31,14 +31,21 @@ dynamic = ["version", "description", "authors", "urls", "keywords"]
 # the file instead of one shared document.
 [project.optional-dependencies]
 collaboration = ["jupyter-collaboration>=4,<5"]
+test = [
+    "pytest>=7",
+    # tests/test_ydoc.py checks that our jupyter_ydoc entry point resolves to
+    # YBoard rather than silently falling back to the generic YFile, which
+    # needs jupyter_ydoc itself present.
+    "jupyter-collaboration>=4,<5",
+]
 
-# Register the server-side shared document for .naavreboard files. The
-# entry-point name MUST equal the document's file type ('naavreboarddoc', see
+# Register the server-side shared document for .naavretb files. The
+# entry-point name MUST equal the document's file type ('naavretbdoc', see
 # src/boardModel.ts and src/index.ts): jupyter_server_ydoc resolves the class
 # via YDOCS.get(file_type) and would otherwise silently fall back to the
 # generic YFile, leaving the board looking fine but never syncing.
 [project.entry-points.jupyter_ydoc]
-naavreboarddoc = "NaaVRE_taskboard_jupyterlab.ydoc:YBoard"
+naavretbdoc = "NaaVRE_taskboard_jupyterlab.ydoc:YBoard"
 
 [tool.hatch.version]
 source = "nodejs"

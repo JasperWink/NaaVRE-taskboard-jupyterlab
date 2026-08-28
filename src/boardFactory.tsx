@@ -1,4 +1,4 @@
-// Document factory for the collaborative task board (`.naavreboard`). The board
+// Document factory for the collaborative task board (`.naavretb`). The board
 // opens as a normal document whose content widget is the React TaskBoard, so it
 // rides the existing RTC pipeline: edits to its shared model (src/boardModel.ts)
 // sync across every client, exactly like `.naavrewf` workflows in the NaaVRE
@@ -139,7 +139,7 @@ export class BoardModelFactory
   implements DocumentRegistry.IModelFactory<BoardModel>
 {
   get name(): string {
-    return 'naavreboard-model';
+    return 'naavretb-model';
   }
 
   get contentType(): Contents.ContentType {

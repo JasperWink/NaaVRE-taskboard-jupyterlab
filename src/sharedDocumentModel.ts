@@ -1,4 +1,4 @@
-// DocumentRegistry.IModel boilerplate for the Yjs-backed `.naavreboard` task
+// DocumentRegistry.IModel boilerplate for the Yjs-backed `.naavretb` task
 // board document (src/boardModel.ts).
 //
 // Forked from the NaaVRE workflow extension, which carries the same file for

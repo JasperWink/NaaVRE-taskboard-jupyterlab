@@ -40,10 +40,23 @@ export function normalizeBoard(raw: unknown): IBoardState {
       }))
     : [];
 
+  // The roster is the union of what was stored and every name currently on a
+  // card. Storing it explicitly is what lets a name outlive the cards that used
+  // it; folding in the card names means a board written before the roster
+  // existed still offers its people, and a name can never be on a card but
+  // missing from the picker.
+  const stored: string[] = Array.isArray(obj.people)
+    ? obj.people.filter((p: any) => typeof p === 'string' && p.length > 0)
+    : [];
+  const people = Array.from(
+    new Set([...stored, ...tasks.flatMap(t => t.assignees)])
+  );
+
   return {
     version: 1,
     columns,
     categories: Array.isArray(obj.categories) ? obj.categories : [],
+    people,
     tasks
   };
 }

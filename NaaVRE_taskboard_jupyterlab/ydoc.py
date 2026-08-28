@@ -1,7 +1,7 @@
 # Copyright (c) NaaVRE contributors.
 # Distributed under the terms of the Apache License 2.0 (see LICENSE).
 
-"""Server-side shared document for NaaVRE ``.naavreboard`` task board files.
+"""Server-side shared document for NaaVRE ``.naavretb`` task board files.
 
 Real-time collaboration in JupyterLab syncs a Yjs (CRDT) document between every
 client *and* the server. ``jupyter_server_ydoc`` looks up the server-side
@@ -11,7 +11,7 @@ document class by file type::
     self._document = YDOCS.get(self._file_type, YFILE)(self.ydoc, self.awareness)
 
 where ``YDOCS`` is populated from the ``jupyter_ydoc`` entry-point group. Our
-file type is ``naavreboarddoc`` (see ``src/boardModel.ts`` and ``src/index.ts``);
+file type is ``naavretbdoc`` (see ``src/boardModel.ts`` and ``src/index.ts``);
 without a registered class it would fall back to the generic ``YFile`` (a single
 ``Y.Text``), which does not match the front-end structure. That failure is
 silent: the board opens and looks fine, but nothing syncs.
@@ -25,8 +25,9 @@ Three names must therefore agree, or the fallback kicks in:
 This class registers a proper server-side document so the server and the
 front-end shared model (``src/boardModel.ts`` ``Board``) agree on the CRDT
 layout: the board lives in a ``pycrdt.Map`` named ``content``, split across
-granular keys — ``columns`` and ``categories`` as JSON arrays, plus one JSON
-object per card under ``task:<id>`` — exactly how the front-end writes them.
+granular keys — ``columns``, ``categories`` and ``people`` as JSON arrays, plus
+one JSON object per card under ``task:<id>`` — exactly how the front-end writes
+them.
 Matching structures is what lets the board load, sync live between clients, and
 save back to disk under RTC.
 """
@@ -62,7 +63,7 @@ def _parse_json(raw: Any, fallback: Any) -> Any:
 
 
 class YBoard(YBaseDoc):
-    """A :class:`YBaseDoc` for the NaaVRE task board (``.naavreboard`` files).
+    """A :class:`YBaseDoc` for the NaaVRE task board (``.naavretb`` files).
 
     The task board is a single, JupyterLab-wide document. Backing it with a
     collaborative file (rather than the browser-local state DB) lets every client
@@ -76,6 +77,7 @@ class YBoard(YBaseDoc):
             "content": YMap[
                 "columns": str,      # JSON array
                 "categories": str,   # JSON array
+                "people": str,       # JSON array of assignee names
                 "task:<id>": str,    # one JSON object per task card
             ]
         }
@@ -124,17 +126,18 @@ class YBoard(YBaseDoc):
 
         # Insertion order here is the key order of the emitted JSON, and must
         # match `Board.getBoard` in src/boardModel.ts: version, columns,
-        # categories, tasks. A missing key is left out entirely, mirroring the
+        # categories, people, tasks. A missing key is left out entirely,
+        # mirroring the
         # `undefined` fallback there (JSON.stringify drops those).
         board = {"version": 1}
-        for key in ("columns", "categories"):
+        for key in ("columns", "categories", "people"):
             if key in keys:
                 board[key] = _parse_json(self._ycontent.get(key), [])
         board["tasks"] = tasks
         return board
 
     def get(self) -> str:
-        """Serialize the shared document to the on-disk ``.naavreboard`` string.
+        """Serialize the shared document to the on-disk ``.naavretb`` string.
 
         Called by the server when saving. Produces the same ``{"board": ...}``
         JSON the front-end writes, so files stay identical whether saved with or
@@ -143,7 +146,7 @@ class YBoard(YBaseDoc):
         return json.dumps({"board": self._get_board()}, indent=2)
 
     def set(self, value: str) -> None:
-        """Populate the shared document from the on-disk ``.naavreboard`` string.
+        """Populate the shared document from the on-disk ``.naavretb`` string.
 
         Called by the server when loading the file. Splits the board across the
         granular keys the front-end reads back (src/boardModel.ts ``getBoard``),
@@ -155,7 +158,7 @@ class YBoard(YBaseDoc):
         if not isinstance(board, dict):
             board = {}
         desired = {}
-        for key in ("columns", "categories"):
+        for key in ("columns", "categories", "people"):
             if key in board:
                 desired[key] = json.dumps(board[key])
         tasks = board.get("tasks")

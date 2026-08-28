@@ -18,6 +18,7 @@ export function Column({
   column,
   cards,
   categories,
+  people,
   canDelete,
   draggingCard,
   onDropCard,
@@ -29,6 +30,7 @@ export function Column({
   column: IColumn;
   cards: ITask[];
   categories: ICategory[];
+  people: string[];
   canDelete: boolean;
   draggingCard: ITask | null;
   onDropCard: (
@@ -142,6 +144,7 @@ export function Column({
             <TaskCard
               card={card}
               categories={categories}
+              people={people}
               handlers={cardHandlers}
             />
           </Box>

@@ -1,7 +1,7 @@
 // Data model for the task planning board (Kanban).
 //
 // The board is global to JupyterLab and persisted as a collaborative
-// `.naavreboard` document (src/boardModel.ts), so it syncs over RTC. Its cards
+// `.naavretb` document (src/boardModel.ts), so it syncs over RTC. Its cards
 // are user-created and stand on their own: nothing on the board is derived from
 // a workflow.
 
@@ -37,11 +37,18 @@ export interface ITask {
 
 /**
  * The full persisted board state.
+ *
+ * `people` is the roster of names that have been assigned to something on this
+ * board. Like `categories`, it outlives the cards that use it, so a name typed
+ * once can be picked from a list afterwards instead of retyped. A card still
+ * stores plain names in `ITask.assignees`, so the roster is a convenience over
+ * the card data rather than a key into it.
  */
 export interface IBoardState {
   version: 1;
   columns: IColumn[];
   categories: ICategory[];
+  people: string[];
   tasks: ITask[];
 }
 
@@ -70,6 +77,7 @@ export function defaultBoardState(): IBoardState {
     version: 1,
     columns: DEFAULT_COLUMNS.map(c => ({ ...c })),
     categories: [],
+    people: [],
     tasks: []
   };
 }

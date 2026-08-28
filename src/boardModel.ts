@@ -3,8 +3,8 @@
 // sync across clients over RTC.
 //
 // The board state is stored under granular keys in the `content` map —
-// 'columns' and 'categories' as JSON arrays, plus one JSON object per card
-// under 'task:<id>'. Writing only the keys that actually changed lets Yjs merge
+// 'columns', 'categories' and 'people' as JSON arrays, plus one JSON object per
+// card under 'task:<id>'. Writing only the keys that changed lets Yjs merge
 // concurrent edits to different cards, instead of last-write-wins on the whole
 // board. The front-end (src/components/taskBoard) owns and validates the board
 // schema.
@@ -25,7 +25,7 @@ import { normalizeBoard } from './components/taskBoard/boardStore';
  * the server fall back to the generic YFile and the board silently stops
  * syncing.
  */
-export const BOARD_CONTENT_TYPE = 'naavreboarddoc' as Contents.ContentType;
+export const BOARD_CONTENT_TYPE = 'naavretbdoc' as Contents.ContentType;
 
 const TASK_KEY_PREFIX = 'task:';
 
@@ -46,7 +46,7 @@ export type BoardChange = {
 } & DocumentChange;
 
 /**
- * DocumentModel holding the task board content of a `.naavreboard` file.
+ * DocumentModel holding the task board content of a `.naavretb` file.
  */
 export class BoardModel extends SharedDocumentModel<BoardChange, Board> {
   constructor(options: DocumentRegistry.IModelOptions<Board>) {
@@ -121,6 +121,7 @@ export class Board extends YDocument<BoardChange> {
       version: 1,
       columns: parseJson(this._content.get('columns'), undefined),
       categories: parseJson(this._content.get('categories'), undefined),
+      people: parseJson(this._content.get('people'), undefined),
       tasks
     };
   }
@@ -135,6 +136,7 @@ export class Board extends YDocument<BoardChange> {
     const desired = new Map<string, string>();
     desired.set('columns', JSON.stringify(value.columns));
     desired.set('categories', JSON.stringify(value.categories));
+    desired.set('people', JSON.stringify(value.people));
     value.tasks.forEach(task => {
       desired.set(TASK_KEY_PREFIX + task.id, JSON.stringify(task));
     });
@@ -154,14 +156,14 @@ export class Board extends YDocument<BoardChange> {
   }
 
   /**
-   * Get the document source: the on-disk `.naavreboard` string.
+   * Get the document source: the on-disk `.naavretb` string.
    */
   getSource(): string {
     return JSON.stringify({ board: this.getBoard() }, null, 2);
   }
 
   /**
-   * Set the document source from the on-disk `.naavreboard` string. A corrupt
+   * Set the document source from the on-disk `.naavretb` string. A corrupt
    * file degrades to an empty board instead of failing to open.
    */
   setSource(value: string): void {

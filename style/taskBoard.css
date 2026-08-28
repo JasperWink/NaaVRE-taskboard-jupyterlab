@@ -1,20 +1,9 @@
-/* Task planning board (Kanban) left-sidebar panel. */
+/* Task planning board (Kanban), shown as a document in the main area. */
 
 .naavre-task-board-widget {
   min-width: 300px;
   height: 100%;
   overflow: hidden;
-}
-
-/* Left activity-bar launcher (opens the board in the main area). */
-.naavre-task-board-launcher {
-  min-width: 180px;
-}
-
-.naavre-task-board-launcher-msg {
-  padding: 16px;
-  color: var(--jp-ui-font-color2);
-  font-size: var(--jp-ui-font-size1);
 }
 
 .naavre-task-board {
