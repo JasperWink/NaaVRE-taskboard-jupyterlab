@@ -25,7 +25,7 @@ import { normalizeBoard } from './components/taskBoard/boardStore';
  * the server fall back to the generic YFile and the board silently stops
  * syncing.
  */
-export const BOARD_CONTENT_TYPE = 'naavreboarddoc' as Contents.ContentType;
+export const BOARD_CONTENT_TYPE = 'naavretbdoc' as Contents.ContentType;
 
 const TASK_KEY_PREFIX = 'task:';
 
@@ -46,7 +46,7 @@ export type BoardChange = {
 } & DocumentChange;
 
 /**
- * DocumentModel holding the task board content of a `.naavreboard` file.
+ * DocumentModel holding the task board content of a `.naavretb` file.
  */
 export class BoardModel extends SharedDocumentModel<BoardChange, Board> {
   constructor(options: DocumentRegistry.IModelOptions<Board>) {
@@ -156,14 +156,14 @@ export class Board extends YDocument<BoardChange> {
   }
 
   /**
-   * Get the document source: the on-disk `.naavreboard` string.
+   * Get the document source: the on-disk `.naavretb` string.
    */
   getSource(): string {
     return JSON.stringify({ board: this.getBoard() }, null, 2);
   }
 
   /**
-   * Set the document source from the on-disk `.naavreboard` string. A corrupt
+   * Set the document source from the on-disk `.naavretb` string. A corrupt
    * file degrades to an empty board instead of failing to open.
    */
   setSource(value: string): void {

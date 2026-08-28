@@ -9,7 +9,7 @@ Two things are checked here that nothing else catches:
 
 2. That ``get()`` is deterministic. The keys of a ``pycrdt.Map`` come back in
    the map's own order, so without an explicit sort the ``tasks`` array is
-   reshuffled on every save and the ``.naavreboard`` file churns.
+   reshuffled on every save and the ``.naavretb`` file churns.
 """
 
 import json
@@ -18,7 +18,7 @@ import pytest
 
 from NaaVRE_taskboard_jupyterlab.ydoc import YBoard
 
-CONTENT_TYPE = "naavreboarddoc"
+CONTENT_TYPE = "naavretbdoc"
 
 
 def board_json(tasks=(), columns=None, categories=(), people=()):

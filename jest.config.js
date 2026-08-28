@@ -1,9 +1,17 @@
 const jestJupyterLab = require('@jupyterlab/testutils/lib/jest-config');
 
+// Packages published as ESM, which jest must transform rather than require().
+// @jupyter/react-components and its dependencies come in via
+// @jupyterlab/ui-components (LabIcon), so anything importing src/icons.tsx —
+// directly or through src/commands.ts — needs them listed here.
 const esModules = [
   '@codemirror',
+  '@jupyter/react-components',
+  '@jupyter/web-components',
   '@jupyter/ydoc',
   '@jupyterlab/',
+  '@microsoft',
+  'exenv-es6',
   'lib0',
   'nanoid',
   'vscode-ws-jsonrpc',

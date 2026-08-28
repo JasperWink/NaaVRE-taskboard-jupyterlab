@@ -1,7 +1,7 @@
 // Data model for the task planning board (Kanban).
 //
 // The board is global to JupyterLab and persisted as a collaborative
-// `.naavreboard` document (src/boardModel.ts), so it syncs over RTC. Its cards
+// `.naavretb` document (src/boardModel.ts), so it syncs over RTC. Its cards
 // are user-created and stand on their own: nothing on the board is derived from
 // a workflow.
 

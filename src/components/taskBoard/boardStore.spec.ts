@@ -2,7 +2,7 @@ import { normalizeBoard } from './boardStore';
 import { DEFAULT_COLUMNS, defaultBoardState } from './types';
 
 // normalizeBoard is the only thing standing between whatever is in the
-// `.naavreboard` file (or the shared document) and the React components, which
+// `.naavretb` file (or the shared document) and the React components, which
 // index into these fields without checking. Anything it lets through is a
 // runtime error in the UI, so it has to be permissive about input and strict
 // about output.

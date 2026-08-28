@@ -32,10 +32,10 @@ import { taskBoardIcon } from './icons';
  * The scope of "shared" is exactly "same Jupyter server": two servers means two
  * boards.
  *
- * Frozen. Changing this (or the `.naavreboard` extension) orphans every board
+ * Frozen. Changing this (or the `.naavretb` extension) orphans every board
  * already written to disk, with no error and no migration path.
  */
-export const BOARD_PATH = 'naavre-taskboard.naavreboard';
+export const BOARD_PATH = 'taskboard.naavretb';
 
 /** Name of the widget factory registered for board documents (see index.ts). */
 export const BOARD_FACTORY = 'NaaVRE Task Board';
@@ -53,27 +53,71 @@ export namespace CommandIDs {
   export const addTask = 'naavre-taskboard:add-task';
 }
 
+function isNotFound(reason: unknown): boolean {
+  return (
+    reason instanceof ServerConnection.ResponseError &&
+    reason.response.status === 404
+  );
+}
+
+/** In-flight existence check, shared by every caller. See ensureBoardFile. */
+let _ensuring: Promise<void> | null = null;
+
 /**
  * Make sure the board document exists, creating an empty one on first use.
+ *
+ * Single-flight per client. Several callers race here — plugin startup, the
+ * open command, a card arriving from the workflow composer — and every 404 that
+ * turns into a `contents.save` is a write that goes *around* any live
+ * collaboration room. The server treats such a write as an out-of-band change
+ * and reloads the room from disk, so a stray one blanks the board for everyone
+ * currently editing it. One check serves all callers.
  */
-async function ensureBoardFile(app: JupyterFrontEnd): Promise<void> {
+export function ensureBoardFile(app: JupyterFrontEnd): Promise<void> {
+  if (!_ensuring) {
+    _ensuring = createBoardFileIfMissing(app).finally(() => {
+      _ensuring = null;
+    });
+  }
+  return _ensuring;
+}
+
+async function createBoardFileIfMissing(app: JupyterFrontEnd): Promise<void> {
   const contents = app.serviceManager.contents;
+
+  const exists = async (): Promise<boolean> => {
+    try {
+      await contents.get(BOARD_PATH, { content: false });
+      return true;
+    } catch (reason) {
+      // Only a 404 means "missing". Any other failure (network, auth, server
+      // error) must not be read as an empty board and overwritten.
+      if (isNotFound(reason)) {
+        return false;
+      }
+      throw reason;
+    }
+  };
+
+  if (await exists()) {
+    return;
+  }
+  // Look again immediately before writing. On a shared server two clients can
+  // both see the first 404; this narrows that window rather than closing it,
+  // which is why the write below also recovers from losing the race.
+  if (await exists()) {
+    return;
+  }
   try {
-    await contents.get(BOARD_PATH, { content: false });
+    await contents.save(BOARD_PATH, {
+      type: 'file',
+      format: 'text',
+      content: '{}'
+    });
   } catch (reason) {
-    // Only create the file when it is actually missing: any other failure
-    // (network, auth, server error) must not overwrite the shared board with
-    // an empty one.
-    if (
-      reason instanceof ServerConnection.ResponseError &&
-      reason.response.status === 404
-    ) {
-      await contents.save(BOARD_PATH, {
-        type: 'file',
-        format: 'text',
-        content: '{}'
-      });
-    } else {
+    // Someone else created it in the meantime. That is the outcome we wanted,
+    // so only report the failure if the file is still not there.
+    if (!(await exists())) {
       throw reason;
     }
   }
@@ -101,9 +145,10 @@ async function boardContext(
 /**
  * Open (creating if missing) the shared board and bring it to the front.
  *
- * Errors are reported to the console rather than thrown: this is driven by a
- * user clicking the sidebar icon or the command palette, where there is no
- * caller to hand a failure to.
+ * Errors are reported to the console rather than thrown: this runs from the
+ * command palette and from layout restoration, where there is no caller to hand
+ * a failure to. Opening the board from the file browser does not come through
+ * here at all — the document registry handles that.
  */
 export async function openBoard(
   app: JupyterFrontEnd,

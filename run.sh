@@ -112,7 +112,7 @@ mkdir -p notebook-dir
 # happened to be: jupyter-collaboration defaults it to '.jupyter_ystore.db' in
 # the *current directory*, which otherwise litters whichever folder you ran from.
 say "Starting JupyterLab on http://localhost:$PORT"
-say "  Open the task board from the icon in the left activity bar."
+say "  Open taskboard.naavretb from the file browser."
 exec jupyter lab \
   --notebook-dir="$ROOT/notebook-dir" \
   --port="$PORT" \

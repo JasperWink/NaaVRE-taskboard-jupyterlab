@@ -1,7 +1,7 @@
 # Copyright (c) NaaVRE contributors.
 # Distributed under the terms of the Apache License 2.0 (see LICENSE).
 
-"""Server-side shared document for NaaVRE ``.naavreboard`` task board files.
+"""Server-side shared document for NaaVRE ``.naavretb`` task board files.
 
 Real-time collaboration in JupyterLab syncs a Yjs (CRDT) document between every
 client *and* the server. ``jupyter_server_ydoc`` looks up the server-side
@@ -11,7 +11,7 @@ document class by file type::
     self._document = YDOCS.get(self._file_type, YFILE)(self.ydoc, self.awareness)
 
 where ``YDOCS`` is populated from the ``jupyter_ydoc`` entry-point group. Our
-file type is ``naavreboarddoc`` (see ``src/boardModel.ts`` and ``src/index.ts``);
+file type is ``naavretbdoc`` (see ``src/boardModel.ts`` and ``src/index.ts``);
 without a registered class it would fall back to the generic ``YFile`` (a single
 ``Y.Text``), which does not match the front-end structure. That failure is
 silent: the board opens and looks fine, but nothing syncs.
@@ -63,7 +63,7 @@ def _parse_json(raw: Any, fallback: Any) -> Any:
 
 
 class YBoard(YBaseDoc):
-    """A :class:`YBaseDoc` for the NaaVRE task board (``.naavreboard`` files).
+    """A :class:`YBaseDoc` for the NaaVRE task board (``.naavretb`` files).
 
     The task board is a single, JupyterLab-wide document. Backing it with a
     collaborative file (rather than the browser-local state DB) lets every client
@@ -137,7 +137,7 @@ class YBoard(YBaseDoc):
         return board
 
     def get(self) -> str:
-        """Serialize the shared document to the on-disk ``.naavreboard`` string.
+        """Serialize the shared document to the on-disk ``.naavretb`` string.
 
         Called by the server when saving. Produces the same ``{"board": ...}``
         JSON the front-end writes, so files stay identical whether saved with or
@@ -146,7 +146,7 @@ class YBoard(YBaseDoc):
         return json.dumps({"board": self._get_board()}, indent=2)
 
     def set(self, value: str) -> None:
-        """Populate the shared document from the on-disk ``.naavreboard`` string.
+        """Populate the shared document from the on-disk ``.naavretb`` string.
 
         Called by the server when loading the file. Splits the board across the
         granular keys the front-end reads back (src/boardModel.ts ``getBoard``),

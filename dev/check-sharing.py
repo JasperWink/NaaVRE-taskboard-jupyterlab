@@ -24,8 +24,8 @@ from websockets.asyncio.client import connect
 BASE = "http://localhost:8899"
 WS = "ws://localhost:8899"
 TOKEN = "devtoken"
-PATH = "naavre-taskboard.naavreboard"
-CONTENT_TYPE = "naavreboarddoc"
+PATH = "taskboard.naavretb"
+CONTENT_TYPE = "naavretbdoc"
 
 
 def w_varuint(n: int) -> bytes:

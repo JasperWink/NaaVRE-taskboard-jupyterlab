@@ -1,5 +1,4 @@
 import {
-  ILabShell,
   ILayoutRestorer,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
@@ -19,10 +18,9 @@ import {
   BOARD_FACTORY,
   BOARD_PATH,
   CommandIDs,
-  openBoard
+  ensureBoardFile
 } from './commands';
 import { taskBoardIcon } from './icons';
-import { TaskBoardButton } from './taskBoardWidget';
 
 /**
  * Task board plugin: a Kanban-style planning board where users add tasks and
@@ -30,19 +28,19 @@ import { TaskBoardButton } from './taskBoardWidget';
  *
  * The board is a single collaborative document (BOARD_PATH) whose state syncs
  * across clients over RTC, just like `.naavrewf` workflows in the NaaVRE
- * workflow extension. A button in the left activity bar opens it as a full tab
- * in the main work area.
+ * workflow extension. It opens the way any other document does — from the file
+ * browser — so the board is created on startup if it is missing, and is there
+ * to click.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: '@naavre/taskboard-jupyterlab:plugin',
   description: 'NaaVRE collaborative task board on Jupyter Lab',
   autoStart: true,
-  requires: [IDocumentManager, ILabShell],
+  requires: [IDocumentManager],
   optional: [ICollaborativeContentProvider, ILayoutRestorer],
   activate: (
     app: JupyterFrontEnd,
     docManager: IDocumentManager,
-    labShell: ILabShell,
     contentProvider: ICollaborativeContentProvider | null,
     restorer: ILayoutRestorer | null
   ) => {
@@ -52,12 +50,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     // Register the board document type.
     app.docRegistry.addFileType({
-      name: 'naavreboard',
+      name: 'naavretb',
       displayName: 'NaaVRE Task Board',
       mimeTypes: ['text/json', 'application/json'],
-      extensions: ['.naavreboard'],
+      extensions: ['.naavretb'],
       fileFormat: 'text',
-      contentType: BOARD_CONTENT_TYPE
+      contentType: BOARD_CONTENT_TYPE,
+      icon: taskBoardIcon
     });
 
     const boardModelFactory = new BoardModelFactory();
@@ -65,16 +64,16 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     const boardWidgetFactory = new BoardWidgetFactory({
       name: BOARD_FACTORY,
-      modelName: 'naavreboard-model',
-      fileTypes: ['naavreboard'],
-      defaultFor: ['naavreboard']
+      modelName: 'naavretb-model',
+      fileTypes: ['naavretb'],
+      defaultFor: ['naavretb']
     });
 
     // Enable real-time collaboration when the jupyter-collaboration content
     // provider is available. Two things are needed:
     //   1. Register our shared model factory so the collaborative drive hands
     //      every client the same Yjs document (a `Board`) for the file. The key
-    //      is the document's content type ('naavreboarddoc') and must match the
+    //      is the document's content type ('naavretbdoc') and must match the
     //      model factory (src/boardFactory.tsx) and the server-side YDoc entry
     //      point (pyproject.toml -> NaaVRE_taskboard_jupyterlab.ydoc:YBoard).
     //   2. Point the widget factory at the 'rtc' content provider, so opening
@@ -96,7 +95,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
       namespace: 'naavre-task-board'
     });
     boardWidgetFactory.widgetCreated.connect((_sender, widget) => {
-      widget.title.label = 'Task Board';
+      // Do NOT set `widget.title.label`. DocumentWidget treats a label that
+      // differs from the file name as a rename request and calls
+      // `context.rename(label)` — that is how JupyterLab lets you rename a
+      // document by editing its tab title. Setting it to a display name here
+      // renames the board file itself on every open, which is how stray
+      // extensionless "Task Board" files appear next to the real one. The tab
+      // shows the file name, exactly as `.naavrewf` workflows do.
       widget.title.icon = taskBoardIcon;
       widget.title.caption = 'Task Board';
       widget.title.closable = true;
@@ -118,27 +123,16 @@ const plugin: JupyterFrontEndPlugin<void> = {
       });
     }
 
-    // The left activity-bar entry. Clicking its icon opens the board; the panel
-    // itself just acts as a launcher.
-    const button = new TaskBoardButton(() => {
-      void openBoard(app, docManager).then(() => {
-        // The launcher lives in the left panel; collapse it so the board takes
-        // over the screen instead of leaving an empty side panel behind. Only
-        // on click — the restore path must not touch the sidebar layout.
-        labShell.collapseLeft();
+    // Create the board document if this server has never had one, so it is
+    // present in the file browser to open. Opening it is the only entry point,
+    // so without this a fresh instance would show the user nothing to click.
+    // Deferred to `restored` to keep it off the startup path, and safe to call
+    // on every launch — it writes only when the file is genuinely missing.
+    app.restored
+      .then(() => ensureBoardFile(app))
+      .catch(reason => {
+        console.error('Could not create the task board document', reason);
       });
-    });
-    button.title.icon = taskBoardIcon;
-    button.title.caption = 'Task Board';
-    labShell.add(button, 'left', { rank: 400 });
-
-    // Only react to user clicks, not to layout restoration during startup.
-    app.restored.then(() => {
-      button.enable();
-      if (button.isVisible) {
-        labShell.collapseLeft();
-      }
-    });
   }
 };
 
