@@ -3,8 +3,8 @@
 // sync across clients over RTC.
 //
 // The board state is stored under granular keys in the `content` map —
-// 'columns' and 'categories' as JSON arrays, plus one JSON object per card
-// under 'task:<id>'. Writing only the keys that actually changed lets Yjs merge
+// 'columns', 'categories' and 'people' as JSON arrays, plus one JSON object per
+// card under 'task:<id>'. Writing only the keys that changed lets Yjs merge
 // concurrent edits to different cards, instead of last-write-wins on the whole
 // board. The front-end (src/components/taskBoard) owns and validates the board
 // schema.
@@ -121,6 +121,7 @@ export class Board extends YDocument<BoardChange> {
       version: 1,
       columns: parseJson(this._content.get('columns'), undefined),
       categories: parseJson(this._content.get('categories'), undefined),
+      people: parseJson(this._content.get('people'), undefined),
       tasks
     };
   }
@@ -135,6 +136,7 @@ export class Board extends YDocument<BoardChange> {
     const desired = new Map<string, string>();
     desired.set('columns', JSON.stringify(value.columns));
     desired.set('categories', JSON.stringify(value.categories));
+    desired.set('people', JSON.stringify(value.people));
     value.tasks.forEach(task => {
       desired.set(TASK_KEY_PREFIX + task.id, JSON.stringify(task));
     });

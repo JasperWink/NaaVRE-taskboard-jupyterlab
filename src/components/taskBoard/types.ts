@@ -37,11 +37,18 @@ export interface ITask {
 
 /**
  * The full persisted board state.
+ *
+ * `people` is the roster of names that have been assigned to something on this
+ * board. Like `categories`, it outlives the cards that use it, so a name typed
+ * once can be picked from a list afterwards instead of retyped. A card still
+ * stores plain names in `ITask.assignees`, so the roster is a convenience over
+ * the card data rather than a key into it.
  */
 export interface IBoardState {
   version: 1;
   columns: IColumn[];
   categories: ICategory[];
+  people: string[];
   tasks: ITask[];
 }
 
@@ -70,6 +77,7 @@ export function defaultBoardState(): IBoardState {
     version: 1,
     columns: DEFAULT_COLUMNS.map(c => ({ ...c })),
     categories: [],
+    people: [],
     tasks: []
   };
 }

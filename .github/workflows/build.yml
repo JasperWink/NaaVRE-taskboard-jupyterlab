@@ -44,6 +44,11 @@ jobs:
         jupyter labextension list 2>&1 | grep -ie "@naavre/taskboard-jupyterlab.*OK"
         python -m jupyterlab.browser_check
 
+    - name: Test the server-side shared document
+      run: |
+        set -eux
+        python -m pytest tests -v
+
     - name: Package the extension
       run: |
         set -eux

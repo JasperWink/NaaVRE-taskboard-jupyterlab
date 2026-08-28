@@ -25,8 +25,9 @@ Three names must therefore agree, or the fallback kicks in:
 This class registers a proper server-side document so the server and the
 front-end shared model (``src/boardModel.ts`` ``Board``) agree on the CRDT
 layout: the board lives in a ``pycrdt.Map`` named ``content``, split across
-granular keys — ``columns`` and ``categories`` as JSON arrays, plus one JSON
-object per card under ``task:<id>`` — exactly how the front-end writes them.
+granular keys — ``columns``, ``categories`` and ``people`` as JSON arrays, plus
+one JSON object per card under ``task:<id>`` — exactly how the front-end writes
+them.
 Matching structures is what lets the board load, sync live between clients, and
 save back to disk under RTC.
 """
@@ -76,6 +77,7 @@ class YBoard(YBaseDoc):
             "content": YMap[
                 "columns": str,      # JSON array
                 "categories": str,   # JSON array
+                "people": str,       # JSON array of assignee names
                 "task:<id>": str,    # one JSON object per task card
             ]
         }
@@ -124,10 +126,11 @@ class YBoard(YBaseDoc):
 
         # Insertion order here is the key order of the emitted JSON, and must
         # match `Board.getBoard` in src/boardModel.ts: version, columns,
-        # categories, tasks. A missing key is left out entirely, mirroring the
+        # categories, people, tasks. A missing key is left out entirely,
+        # mirroring the
         # `undefined` fallback there (JSON.stringify drops those).
         board = {"version": 1}
-        for key in ("columns", "categories"):
+        for key in ("columns", "categories", "people"):
             if key in keys:
                 board[key] = _parse_json(self._ycontent.get(key), [])
         board["tasks"] = tasks
@@ -155,7 +158,7 @@ class YBoard(YBaseDoc):
         if not isinstance(board, dict):
             board = {}
         desired = {}
-        for key in ("columns", "categories"):
+        for key in ("columns", "categories", "people"):
             if key in board:
                 desired[key] = json.dumps(board[key])
         tasks = board.get("tasks")

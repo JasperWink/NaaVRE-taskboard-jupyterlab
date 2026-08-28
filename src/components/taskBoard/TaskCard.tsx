@@ -24,6 +24,8 @@ export interface ICardHandlers {
   onDragStart: (card: ITask) => void;
   onDragEnd: () => void;
   onSetAssignees: (card: ITask, assignees: string[]) => void;
+  onCreatePerson: (name: string) => void;
+  onDeletePerson: (name: string) => void;
   onSetCategories: (card: ITask, categoryIds: string[]) => void;
   onCreateCategory: (category: ICategory) => void;
   onDeleteCategory: (id: string) => void;
@@ -34,10 +36,12 @@ export interface ICardHandlers {
 export function TaskCard({
   card,
   categories,
+  people,
   handlers
 }: {
   card: ITask;
   categories: ICategory[];
+  people: string[];
   handlers: ICardHandlers;
 }) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
@@ -61,6 +65,22 @@ export function TaskCard({
   const createCategory = (category: ICategory) => {
     handlers.onCreateCategory(category);
     handlers.onSetCategories(card, [...card.categoryIds, category.id]);
+  };
+
+  const toggleAssignee = (name: string) => {
+    const next = card.assignees.includes(name)
+      ? card.assignees.filter(a => a !== name)
+      : [...card.assignees, name];
+    handlers.onSetAssignees(card, next);
+  };
+
+  // Adding a name from this card both puts it on the board's roster and
+  // assigns it here, mirroring how creating a category assigns it.
+  const createPerson = (name: string) => {
+    handlers.onCreatePerson(name);
+    if (!card.assignees.includes(name)) {
+      handlers.onSetAssignees(card, [...card.assignees, name]);
+    }
   };
 
   return (
@@ -192,8 +212,11 @@ export function TaskCard({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
         <AssigneeEditor
+          people={people}
           assignees={card.assignees}
-          onChange={a => handlers.onSetAssignees(card, a)}
+          onToggle={toggleAssignee}
+          onCreate={createPerson}
+          onDeletePerson={handlers.onDeletePerson}
         />
       </Popover>
 

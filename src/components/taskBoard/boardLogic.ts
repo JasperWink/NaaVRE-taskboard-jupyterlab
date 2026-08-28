@@ -70,6 +70,36 @@ export function deleteCategory(board: IBoardState, id: string): IBoardState {
 }
 
 /**
+ * Remember a name on the board's roster, so it can be assigned to other cards
+ * without retyping it. Adding a name already on the roster changes nothing —
+ * names are the identity here, and duplicates would show up twice in the
+ * picker.
+ */
+export function addPerson(board: IBoardState, name: string): IBoardState {
+  const trimmed = name.trim();
+  if (!trimmed || board.people.includes(trimmed)) {
+    return board;
+  }
+  return { ...board, people: [...board.people, trimmed] };
+}
+
+/**
+ * Drop a name from the roster and unassign it from every card, mirroring what
+ * deleting a category does. Without the second half the name would vanish from
+ * the picker but linger on cards, with no way to remove it.
+ */
+export function deletePerson(board: IBoardState, name: string): IBoardState {
+  return {
+    ...board,
+    people: board.people.filter(p => p !== name),
+    tasks: board.tasks.map(t => ({
+      ...t,
+      assignees: t.assignees.filter(a => a !== name)
+    }))
+  };
+}
+
+/**
  * Add a new task to the end of a column.
  */
 export function addTask(
