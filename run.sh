@@ -70,9 +70,24 @@ export PATH="$VENV/bin:$PATH"
 # [collaboration] extra pulls in jupyter-collaboration; without it the board
 # still works, but each client edits its own copy of the file instead of one
 # shared document — which is the whole point of the board.
+# Install, and re-install whenever the packaging metadata changes. Entry points
+# and dependencies are registered at *install* time, not at build time, so after
+# a `git pull` that touches pyproject.toml a plain rebuild would leave this
+# environment on the old ones. That matters most for the jupyter_ydoc entry
+# point: if its name no longer matches the document's content type, the
+# collaboration server silently falls back to a generic YFile and the board
+# stops syncing while still looking fine.
+STAMP="$VENV/.NaaVRE_taskboard_jupyterlab-pyproject.sha256"
+PYPROJECT_SHA=$("$VENV/bin/python" -c \
+  "import hashlib;print(hashlib.sha256(open('pyproject.toml','rb').read()).hexdigest())")
 if ! "$VENV/bin/python" -c 'import NaaVRE_taskboard_jupyterlab' 2>/dev/null; then
   say "Installing the extension into $(basename "$VENV")"
   "$VENV/bin/python" -m pip install -e '.[collaboration]'
+  echo "$PYPROJECT_SHA" > "$STAMP"
+elif [ "$(cat "$STAMP" 2>/dev/null)" != "$PYPROJECT_SHA" ]; then
+  say "pyproject.toml changed — reinstalling so entry points and deps re-register"
+  "$VENV/bin/python" -m pip install -e '.[collaboration]'
+  echo "$PYPROJECT_SHA" > "$STAMP"
 fi
 
 # Always (re)link the labextension, deliberately NOT guarded by the install
