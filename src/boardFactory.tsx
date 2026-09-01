@@ -1,8 +1,6 @@
-// Document factory for the collaborative task board (`.naavretb`). The board
-// opens as a normal document whose content widget is the React TaskBoard, so it
-// rides the existing RTC pipeline: edits to its shared model (src/boardModel.ts)
-// sync across every client, exactly like `.naavrewf` workflows in the NaaVRE
-// workflow extension.
+// Document factory for the collaborative task board (`.naavretb`). The board is
+// a normal document whose content widget is the React TaskBoard, so edits to its
+// shared model (src/boardModel.ts) ride the existing RTC pipeline.
 
 import React from 'react';
 import { ReactWidget } from '@jupyterlab/apputils';
@@ -17,16 +15,10 @@ import { Board, BoardModel, BOARD_CONTENT_TYPE } from './boardModel';
 import { IBoardState } from './components/taskBoard/types';
 import { TaskBoard } from './components/taskBoard/TaskBoard';
 
-/**
- * Delay between a board edit and the automatic save when the document is not
- * collaborative (mirrors the debounce of the old state-DB store).
- */
+/** Debounce between an edit and the automatic save, when not collaborative. */
 const SAVE_DEBOUNCE_MS = 400;
 
-/**
- * The content widget of a board document: renders the React TaskBoard, sourcing
- * the board state from the collaborative BoardModel.
- */
+/** Content widget of a board document: the React TaskBoard over a BoardModel. */
 export class BoardPanel extends ReactWidget {
   private _context: DocumentRegistry.IContext<BoardModel>;
   private _model: BoardModel;
@@ -45,9 +37,8 @@ export class BoardPanel extends ReactWidget {
           return;
         }
         this._model.contentChanged.connect(this._onBoardChanged, this);
-        // Without RTC there is no collaboration server persisting the shared
-        // document, so save shortly after every edit — like the old state-DB
-        // store did — instead of leaving edits in a dirty, unsaved document.
+        // Without RTC nothing else persists the document, so save after edits
+        // rather than leaving them unsaved.
         if (!this._model.collaborative) {
           this._model.contentChanged.connect(this._scheduleSave, this);
         }
@@ -105,9 +96,7 @@ export class BoardPanel extends ReactWidget {
   }
 }
 
-/**
- * DocumentWidget wrapping the BoardPanel.
- */
+/** DocumentWidget wrapping the BoardPanel. */
 export class BoardDocWidget extends DocumentWidget<BoardPanel, BoardModel> {
   dispose(): void {
     this.content.dispose();
@@ -115,9 +104,7 @@ export class BoardDocWidget extends DocumentWidget<BoardPanel, BoardModel> {
   }
 }
 
-/**
- * Widget factory for board documents.
- */
+/** Widget factory for board documents. */
 export class BoardWidgetFactory extends ABCWidgetFactory<
   BoardDocWidget,
   BoardModel
@@ -132,9 +119,7 @@ export class BoardWidgetFactory extends ABCWidgetFactory<
   }
 }
 
-/**
- * Model factory for board documents.
- */
+/** Model factory for board documents. */
 export class BoardModelFactory
   implements DocumentRegistry.IModelFactory<BoardModel>
 {

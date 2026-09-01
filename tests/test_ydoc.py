@@ -1,15 +1,9 @@
 """Tests for the server-side shared document (NaaVRE_taskboard_jupyterlab.ydoc).
 
-Two things are checked here that nothing else catches:
-
-1. That ``jupyter_ydoc`` actually resolves our file type to :class:`YBoard`.
-   ``jupyter_server_ydoc`` looks the class up with ``YDOCS.get(file_type, YFILE)``
-   — a rename on either side falls back to the generic ``YFile`` with no error
-   at all, and the board simply stops syncing.
-
-2. That ``get()`` is deterministic. The keys of a ``pycrdt.Map`` come back in
-   the map's own order, so without an explicit sort the ``tasks`` array is
-   reshuffled on every save and the ``.naavretb`` file churns.
+Covers two failures nothing else catches: that ``jupyter_ydoc`` resolves our
+file type to :class:`YBoard` (a rename silently falls back to ``YFile`` and the
+board stops syncing), and that ``get()`` is deterministic (``pycrdt.Map`` key
+order would otherwise reshuffle ``tasks`` on every save).
 """
 
 import json

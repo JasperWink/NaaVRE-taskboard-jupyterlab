@@ -12,10 +12,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 import { CATEGORY_COLORS, ICategory, generateId } from './types';
 
-/**
- * Toggle which categories are assigned to a card and create brand-new
- * categories (name + color). Creating a category immediately assigns it.
- */
+/** Toggle a card's categories, or create one (which also assigns it). */
 export function CategoryEditor({
   categories,
   selectedIds,
