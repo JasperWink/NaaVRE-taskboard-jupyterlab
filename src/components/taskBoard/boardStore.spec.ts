@@ -1,11 +1,8 @@
 import { normalizeBoard } from './boardStore';
 import { DEFAULT_COLUMNS, defaultBoardState } from './types';
 
-// normalizeBoard is the only thing standing between whatever is in the
-// `.naavretb` file (or the shared document) and the React components, which
-// index into these fields without checking. Anything it lets through is a
-// runtime error in the UI, so it has to be permissive about input and strict
-// about output.
+// normalizeBoard is all that stands between the `.naavretb` file and React
+// components that index these fields unchecked: permissive in, strict out.
 
 describe('normalizeBoard', () => {
   describe('degrades to an empty board rather than throwing', () => {
@@ -25,8 +22,7 @@ describe('normalizeBoard', () => {
   });
 
   it('falls back to the default columns when the file has an empty list', () => {
-    // An empty column list would leave every card unreachable and the board
-    // unusable, with no way to add a column back.
+    // An empty column list leaves every card unreachable, with no way back.
     expect(normalizeBoard({ columns: [] }).columns).toEqual(DEFAULT_COLUMNS);
   });
 
@@ -103,9 +99,8 @@ describe('normalizeBoard', () => {
     });
 
     it('seeds itself from the cards on a board saved before it existed', () => {
-      // Boards written by an earlier version have no `people` key. Deriving it
-      // from the cards means those names are pickable straight away instead of
-      // having to be retyped.
+      // Boards from an earlier version have no `people` key; deriving it from
+      // the cards makes those names pickable without retyping.
       const b = normalizeBoard({
         tasks: [
           { id: 't1', columnId: 'todo', assignees: ['Ada'] },

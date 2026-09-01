@@ -1,15 +1,10 @@
-// Commands are the task board's entire public surface.
+// Commands are the task board's entire public surface. Other extensions add
+// cards by executing `naavre-taskboard:add-task` through `app.commands`, never
+// by importing from this package — so neither repo depends on the other, and
+// the board stays optional (guard with `commands.hasCommand(...)`).
 //
-// Other extensions — notably the NaaVRE workflow composer, which offers "add
-// this draft cell to the task board" — put cards on the board by executing
-// `naavre-taskboard:add-task` through `app.commands`, never by importing from
-// this package. That keeps the two repos free of any build-time dependency on
-// each other, and makes the board optional: an extension guards its button with
-// `commands.hasCommand(...)` and simply hides it when the board is not
-// installed.
-//
-// The command ids and their argument names are therefore a public contract.
-// Treat them like an API: additive changes only.
+// The command ids and argument names are a public contract: additive changes
+// only.
 
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { IDocumentManager } from '@jupyterlab/docmanager';
@@ -23,17 +18,11 @@ import { addTask } from './components/taskBoard/boardLogic';
 import { taskBoardIcon } from './icons';
 
 /**
- * Path (in the Jupyter server root) of the single, shared board document.
+ * Path of the single shared board document. This constant *is* the sharing
+ * mechanism: every client of a Jupyter server opens this one path, so they all
+ * land in the same Yjs room. Scope of "shared" is exactly one server.
  *
- * This constant *is* the sharing mechanism. Every client of a given Jupyter
- * server opens this one path, which resolves to one collaborative document and
- * therefore one Yjs room — so a user who shares their instance and everyone who
- * joins it all work on the same board, and a joiner never creates a second one.
- * The scope of "shared" is exactly "same Jupyter server": two servers means two
- * boards.
- *
- * Frozen. Changing this (or the `.naavretb` extension) orphans every board
- * already written to disk, with no error and no migration path.
+ * Frozen — changing it orphans every board already on disk, silently.
  */
 export const BOARD_PATH = 'taskboard.naavretb';
 
@@ -45,10 +34,9 @@ export namespace CommandIDs {
   export const open = 'naavre-taskboard:open';
 
   /**
-   * Add a card to the first column of the shared board.
-   *
-   * Args: `{ title: string; description?: string }`. The card is independent —
-   * nothing links it back to whatever the fields were copied from.
+   * Add a card to the first column. Args:
+   * `{ title: string; description?: string }`. The card is independent —
+   * nothing links it back to where the fields came from.
    */
   export const addTask = 'naavre-taskboard:add-task';
 }
@@ -66,12 +54,9 @@ let _ensuring: Promise<void> | null = null;
 /**
  * Make sure the board document exists, creating an empty one on first use.
  *
- * Single-flight per client. Several callers race here — plugin startup, the
- * open command, a card arriving from the workflow composer — and every 404 that
- * turns into a `contents.save` is a write that goes *around* any live
- * collaboration room. The server treats such a write as an out-of-band change
- * and reloads the room from disk, so a stray one blanks the board for everyone
- * currently editing it. One check serves all callers.
+ * Single-flight: several callers race here, and a `contents.save` writes
+ * *around* any live collaboration room — the server reloads the room from
+ * disk, blanking the board for everyone editing it. One check serves all.
  */
 export function ensureBoardFile(app: JupyterFrontEnd): Promise<void> {
   if (!_ensuring) {
@@ -90,8 +75,7 @@ async function createBoardFileIfMissing(app: JupyterFrontEnd): Promise<void> {
       await contents.get(BOARD_PATH, { content: false });
       return true;
     } catch (reason) {
-      // Only a 404 means "missing". Any other failure (network, auth, server
-      // error) must not be read as an empty board and overwritten.
+      // Only a 404 means "missing"; never overwrite on a network or auth error.
       if (isNotFound(reason)) {
         return false;
       }
@@ -102,9 +86,8 @@ async function createBoardFileIfMissing(app: JupyterFrontEnd): Promise<void> {
   if (await exists()) {
     return;
   }
-  // Look again immediately before writing. On a shared server two clients can
-  // both see the first 404; this narrows that window rather than closing it,
-  // which is why the write below also recovers from losing the race.
+  // Narrows (does not close) the race where two clients both see the first
+  // 404; the write below also recovers from losing it.
   if (await exists()) {
     return;
   }
@@ -115,19 +98,14 @@ async function createBoardFileIfMissing(app: JupyterFrontEnd): Promise<void> {
       content: '{}'
     });
   } catch (reason) {
-    // Someone else created it in the meantime. That is the outcome we wanted,
-    // so only report the failure if the file is still not there.
+    // Someone else creating it first is the outcome we wanted.
     if (!(await exists())) {
       throw reason;
     }
   }
 }
 
-/**
- * Open the board document and return its context, without stealing focus.
- * Used by `add-task`, so a card can be added while the user keeps looking at
- * whatever they were doing.
- */
+/** Open the board and return its context, without stealing focus. */
 async function boardContext(
   app: JupyterFrontEnd,
   docManager: IDocumentManager
@@ -144,11 +122,8 @@ async function boardContext(
 
 /**
  * Open (creating if missing) the shared board and bring it to the front.
- *
- * Errors are reported to the console rather than thrown: this runs from the
- * command palette and from layout restoration, where there is no caller to hand
- * a failure to. Opening the board from the file browser does not come through
- * here at all — the document registry handles that.
+ * Errors go to the console: this runs from the palette and from layout
+ * restoration, where there is no caller to hand a failure to.
  */
 export async function openBoard(
   app: JupyterFrontEnd,
@@ -166,12 +141,8 @@ export async function openBoard(
 }
 
 /**
- * Put a card on the board.
- *
- * The card is written to the board's shared model, so it shows up right away on
- * every client that has the board open — and on the next open for those that do
- * not. Failures are thrown, so the calling extension can tell the user why
- * their card did not appear.
+ * Put a card on the board's shared model, so it appears at once on every
+ * client that has it open. Throws, so the caller can report the failure.
  */
 async function addTaskToBoard(
   app: JupyterFrontEnd,
@@ -186,7 +157,7 @@ async function addTaskToBoard(
   }
 
   const context = await boardContext(app, docManager);
-  // The board may have just been opened; its content arrives with `ready`.
+  // The board may have just been opened; content arrives with `ready`.
   await context.ready;
   const model = context.model;
   const columnId = model.board.columns[0]?.id;
@@ -194,17 +165,14 @@ async function addTaskToBoard(
     throw new Error('The task board has no column to add the card to.');
   }
   model.board = addTask(model.board, columnId, { title, description });
-  // With RTC the collaboration server persists the document; without it, the
-  // edit would sit unsaved (the board panel debounces its own saves, but the
-  // board need not be open for this to be called).
+  // Under RTC the collaboration server persists; without it the edit would sit
+  // unsaved, and the board need not be open for this to be called.
   if (!model.collaborative) {
     await context.save();
   }
 }
 
-/**
- * Register the board's commands. Called once from the plugin's activate.
- */
+/** Register the board's commands. Called once from the plugin's activate. */
 export function addCommands(
   app: JupyterFrontEnd,
   docManager: IDocumentManager

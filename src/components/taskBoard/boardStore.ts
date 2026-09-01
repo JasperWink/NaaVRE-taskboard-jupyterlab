@@ -11,11 +11,9 @@ function normalizeCategoryIds(raw: any): string[] {
 }
 
 /**
- * Coerce whatever was stored (in the shared document) into a valid
- * IBoardState, filling in defaults for anything missing — a board saved by an
- * older version, an empty document, or a first run. Keeping this permissive
- * means the collaborative document can store the board as an opaque JSON blob
- * while the front-end owns the schema.
+ * Coerce whatever the shared document holds into a valid IBoardState, filling
+ * in defaults. Staying permissive is what lets the document store the board as
+ * opaque JSON while the front-end owns the schema.
  */
 export function normalizeBoard(raw: unknown): IBoardState {
   const base = defaultBoardState();
@@ -40,11 +38,8 @@ export function normalizeBoard(raw: unknown): IBoardState {
       }))
     : [];
 
-  // The roster is the union of what was stored and every name currently on a
-  // card. Storing it explicitly is what lets a name outlive the cards that used
-  // it; folding in the card names means a board written before the roster
-  // existed still offers its people, and a name can never be on a card but
-  // missing from the picker.
+  // Union of the stored roster and every name on a card, so a name can never be
+  // on a card but missing from the picker.
   const stored: string[] = Array.isArray(obj.people)
     ? obj.people.filter((p: any) => typeof p === 'string' && p.length > 0)
     : [];

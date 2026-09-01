@@ -7,11 +7,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 
-/**
- * Dialog for creating or editing a task's title and description. Used both when
- * adding a card (so a description can be entered immediately) and when editing
- * an existing one.
- */
+/** Dialog for creating or editing a task's title and description. */
 export function TaskFormDialog({
   open,
   heading,

@@ -4,10 +4,7 @@
 
 import { IBoardState, ICategory, IColumn, ITask, generateId } from './types';
 
-/**
- * The list of cards to render. Tasks pointing at a column that no longer exists
- * fall back to the first one, so a card can never become unreachable.
- */
+/** Cards to render; ones in a deleted column fall back to the first column. */
 export function buildCards(board: IBoardState): ITask[] {
   const firstColumnId = board.columns[0]?.id ?? '';
   const columnIds = new Set(board.columns.map(c => c.id));
@@ -17,9 +14,7 @@ export function buildCards(board: IBoardState): ITask[] {
   }));
 }
 
-/**
- * The cards belonging to a column, sorted by their order.
- */
+/** The cards belonging to a column, sorted by their order. */
 export function cardsForColumn(cards: ITask[], columnId: string): ITask[] {
   return cards
     .filter(c => c.columnId === columnId)
@@ -27,9 +22,8 @@ export function cardsForColumn(cards: ITask[], columnId: string): ITask[] {
 }
 
 /**
- * Compute an order value that inserts a card at `index` within `columnCards`
- * (which must already exclude the card being moved). Uses fractional ordering
- * so neighbouring cards never need to be rewritten.
+ * Order value inserting a card at `index` of `columnCards` (which must exclude
+ * the card being moved). Fractional, so neighbours are never rewritten.
  */
 export function orderForInsertion(columnCards: ITask[], index: number): number {
   const prev = columnCards[index - 1];
@@ -46,10 +40,7 @@ export function orderForInsertion(columnCards: ITask[], index: number): number {
   return (prev.order + next.order) / 2;
 }
 
-/**
- * Register a new category on the board. The caller generates the id (so it can
- * immediately reference it, e.g. to assign it to a card).
- */
+/** Register a new category; the caller generates the id so it can use it. */
 export function addCategory(
   board: IBoardState,
   category: ICategory
@@ -57,9 +48,7 @@ export function addCategory(
   return { ...board, categories: [...board.categories, category] };
 }
 
-/**
- * Delete a category and remove it from every card that referenced it.
- */
+/** Delete a category and remove it from every card that referenced it. */
 export function deleteCategory(board: IBoardState, id: string): IBoardState {
   const drop = (ids: string[]) => ids.filter(c => c !== id);
   return {
@@ -70,10 +59,8 @@ export function deleteCategory(board: IBoardState, id: string): IBoardState {
 }
 
 /**
- * Remember a name on the board's roster, so it can be assigned to other cards
- * without retyping it. Adding a name already on the roster changes nothing —
- * names are the identity here, and duplicates would show up twice in the
- * picker.
+ * Add a name to the roster so it can be reused without retyping. Names are the
+ * identity, so re-adding one changes nothing.
  */
 export function addPerson(board: IBoardState, name: string): IBoardState {
   const trimmed = name.trim();
@@ -84,9 +71,8 @@ export function addPerson(board: IBoardState, name: string): IBoardState {
 }
 
 /**
- * Drop a name from the roster and unassign it from every card, mirroring what
- * deleting a category does. Without the second half the name would vanish from
- * the picker but linger on cards, with no way to remove it.
+ * Drop a name from the roster and unassign it everywhere; without the second
+ * half it would linger on cards with no way to remove it.
  */
 export function deletePerson(board: IBoardState, name: string): IBoardState {
   return {
@@ -99,9 +85,7 @@ export function deletePerson(board: IBoardState, name: string): IBoardState {
   };
 }
 
-/**
- * Add a new task to the end of a column.
- */
+/** Add a new task to the end of a column. */
 export function addTask(
   board: IBoardState,
   columnId: string,
@@ -127,10 +111,7 @@ export function addTask(
   return { ...board, tasks: [...board.tasks, task] };
 }
 
-/**
- * Patch a task: its content (title, description), the people and categories on
- * it, or where it sits (column and order, as set by a drag and drop).
- */
+/** Patch a task's content, its people and categories, or its position. */
 export function updateTask(
   board: IBoardState,
   id: string,
@@ -162,10 +143,7 @@ export function renameColumn(
   };
 }
 
-/**
- * Delete a column, moving its cards to the first remaining column. Refuses to
- * delete the last column.
- */
+/** Delete a column, moving its cards to the first one. Keeps the last column. */
 export function deleteColumn(board: IBoardState, id: string): IBoardState {
   const remaining = board.columns.filter(c => c.id !== id);
   if (remaining.length === 0) {

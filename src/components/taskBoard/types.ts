@@ -1,30 +1,21 @@
-// Data model for the task planning board (Kanban).
-//
-// The board is global to JupyterLab and persisted as a collaborative
-// `.naavretb` document (src/boardModel.ts), so it syncs over RTC. Its cards
-// are user-created and stand on their own: nothing on the board is derived from
-// a workflow.
+// Data model for the task planning board (Kanban). The board is global to
+// JupyterLab and persisted as a collaborative `.naavretb` document
+// (src/boardModel.ts). Cards are user-created and derived from nothing.
 
-/**
- * A column ("stage") of the board, e.g. To Do / In Progress / Done.
- */
+/** A column ("stage") of the board, e.g. To Do / In Progress / Done. */
 export interface IColumn {
   id: string;
   title: string;
 }
 
-/**
- * A user-defined category ("label"), rendered as a colored bubble on cards.
- */
+/** A user-defined category ("label"), rendered as a colored bubble on cards. */
 export interface ICategory {
   id: string;
   name: string;
   color: string;
 }
 
-/**
- * A task card. Fully editable and deletable from the board.
- */
+/** A task card. Fully editable and deletable from the board. */
 export interface ITask {
   id: string;
   title: string;
@@ -36,13 +27,9 @@ export interface ITask {
 }
 
 /**
- * The full persisted board state.
- *
- * `people` is the roster of names that have been assigned to something on this
- * board. Like `categories`, it outlives the cards that use it, so a name typed
- * once can be picked from a list afterwards instead of retyped. A card still
- * stores plain names in `ITask.assignees`, so the roster is a convenience over
- * the card data rather than a key into it.
+ * The full persisted board state. `people` is a roster that outlives the cards
+ * using it, so a name is typed once and picked from a list after that. Cards
+ * store plain names, so the roster is a convenience, not a key.
  */
 export interface IBoardState {
   version: 1;
@@ -58,9 +45,7 @@ export const DEFAULT_COLUMNS: IColumn[] = [
   { id: 'done', title: 'Done' }
 ];
 
-/**
- * Palette offered when creating a new category.
- */
+/** Palette offered when creating a new category. */
 export const CATEGORY_COLORS: string[] = [
   '#3c8f49',
   '#0f4e8a',

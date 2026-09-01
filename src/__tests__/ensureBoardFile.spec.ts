@@ -11,11 +11,9 @@ function serverError(): ServerConnection.ResponseError {
 }
 
 /**
- * The slice of JupyterFrontEnd that ensureBoardFile touches.
- *
- * `present` is the server's view of whether the board file exists; `save`
- * flips it, so the fake behaves like a real contents manager rather than just
- * recording calls.
+ * The slice of JupyterFrontEnd that ensureBoardFile touches. `present` is the
+ * server's view of whether the file exists and `save` flips it, so the fake
+ * behaves like a contents manager rather than just recording calls.
  */
 function fakeApp(options: { present: boolean; getFails?: () => unknown }) {
   let present = options.present;
@@ -60,8 +58,7 @@ describe('ensureBoardFile', () => {
   });
 
   it('refuses to write when the server is failing for any other reason', async () => {
-    // A 503 is not "missing". Treating it as missing would write an empty board
-    // over a real one — the worst thing this function could do.
+    // Treating a 503 as "missing" would write an empty board over a real one.
     const f = fakeApp({ present: true, getFails: serverError });
     await expect(ensureBoardFile(f.app)).rejects.toBeInstanceOf(
       ServerConnection.ResponseError
@@ -70,9 +67,8 @@ describe('ensureBoardFile', () => {
   });
 
   it('issues a single check when several callers race', async () => {
-    // Startup, the open command and an incoming card can all arrive at once.
-    // Each redundant save is a write that goes around any live collaboration
-    // room, so they must collapse into one.
+    // Each redundant save writes around any live collaboration room, so the
+    // concurrent callers must collapse into one check.
     const f = fakeApp({ present: false });
     await Promise.all([
       ensureBoardFile(f.app),
@@ -92,8 +88,7 @@ describe('ensureBoardFile', () => {
   });
 
   it('accepts losing the race to another client', async () => {
-    // Another client created the board between our check and our write. The
-    // file exists, which is all we wanted, so this is not an error.
+    // Another client created it between our check and our write; not an error.
     let present = false;
     const get = jest.fn(async () => {
       if (!present) {

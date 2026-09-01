@@ -13,14 +13,9 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { getVariableColor, initials } from './avatarUtils';
 
 /**
- * Toggle which people are assigned to a card, and add people the board has not
- * seen before.
- *
- * The board keeps a roster of everyone who has been added to it (see
- * `IBoardState.people`), so a name is typed once and picked from a list after
- * that — the same way categories work. Removing someone from this card leaves
- * them on the roster; the bin icon on a chip removes them from the board
- * entirely, unassigning them everywhere.
+ * Toggle who is assigned to a card, and add people new to the board. Unticking
+ * a chip leaves the person on the board roster (`IBoardState.people`); the bin
+ * icon removes them from the board entirely, unassigning them everywhere.
  */
 export function AssigneeEditor({
   people,

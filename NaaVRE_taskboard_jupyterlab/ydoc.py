@@ -3,33 +3,16 @@
 
 """Server-side shared document for NaaVRE ``.naavretb`` task board files.
 
-Real-time collaboration in JupyterLab syncs a Yjs (CRDT) document between every
-client *and* the server. ``jupyter_server_ydoc`` looks up the server-side
-document class by file type::
-
-    # jupyter_server_ydoc/rooms.py
-    self._document = YDOCS.get(self._file_type, YFILE)(self.ydoc, self.awareness)
-
-where ``YDOCS`` is populated from the ``jupyter_ydoc`` entry-point group. Our
-file type is ``naavretbdoc`` (see ``src/boardModel.ts`` and ``src/index.ts``);
-without a registered class it would fall back to the generic ``YFile`` (a single
-``Y.Text``), which does not match the front-end structure. That failure is
-silent: the board opens and looks fine, but nothing syncs.
-
-Three names must therefore agree, or the fallback kicks in:
+``jupyter_server_ydoc`` resolves the server-side document class by file type
+(``YDOCS.get(file_type, YFILE)``), so three names must agree or it silently
+falls back to the generic ``YFile`` and the board stops syncing:
 
 * the entry-point name in ``pyproject.toml``,
 * ``BOARD_CONTENT_TYPE`` in ``src/boardModel.ts``,
-* the ``contentType`` of the file type registered in ``src/index.ts``.
+* the ``contentType`` registered in ``src/index.ts``.
 
-This class registers a proper server-side document so the server and the
-front-end shared model (``src/boardModel.ts`` ``Board``) agree on the CRDT
-layout: the board lives in a ``pycrdt.Map`` named ``content``, split across
-granular keys — ``columns``, ``categories`` and ``people`` as JSON arrays, plus
-one JSON object per card under ``task:<id>`` — exactly how the front-end writes
-them.
-Matching structures is what lets the board load, sync live between clients, and
-save back to disk under RTC.
+:class:`YBoard` mirrors the front-end shared model (``Board``) so both agree on
+the CRDT layout; see its docstring for the schema.
 """
 
 import json
@@ -42,15 +25,10 @@ from pycrdt import Awareness, Doc, Map
 try:
     from jupyter_ydoc.ybasedoc import YBaseDoc
 except AttributeError:
-    # jupyter_ydoc eagerly loads every registered entry point when it is first
-    # imported (jupyter_ydoc/__init__.py). One of those entry points is this
-    # module (see pyproject.toml). If this module is imported *before*
-    # jupyter_ydoc finishes initializing, that eager load re-enters here before
-    # YBoard is defined and raises AttributeError. The base class itself has
-    # already been imported by then, so grab it directly; jupyter_ydoc then
-    # re-initializes cleanly on its next import (e.g. from jupyter_server_ydoc),
-    # by which point YBoard exists. In the normal server path jupyter_ydoc is
-    # imported first and this fallback never runs.
+    # jupyter_ydoc eagerly loads its entry points on first import, one of which
+    # is this module. Importing this module first re-enters here before YBoard
+    # exists; the base class is already loaded, so take it directly. Never runs
+    # on the normal server path.
     YBaseDoc = sys.modules["jupyter_ydoc.ybasedoc"].YBaseDoc
 
 
@@ -65,12 +43,8 @@ def _parse_json(raw: Any, fallback: Any) -> Any:
 class YBoard(YBaseDoc):
     """A :class:`YBaseDoc` for the NaaVRE task board (``.naavretb`` files).
 
-    The task board is a single, JupyterLab-wide document. Backing it with a
-    collaborative file (rather than the browser-local state DB) lets every client
-    of the same Jupyter server see the same board, with edits syncing live via
-    RTC.
-
-    Schema (mirrors ``Board`` in ``src/boardModel.ts``)::
+    One JupyterLab-wide document, so every client of the same Jupyter server
+    sees the same board. Schema (mirrors ``Board`` in ``src/boardModel.ts``)::
 
         {
             "state": YMap,
@@ -82,10 +56,8 @@ class YBoard(YBaseDoc):
             ]
         }
 
-    Storing each card under its own key lets Yjs merge concurrent edits to
-    different cards instead of last-write-wins on the whole board. The card
-    contents stay opaque JSON strings, so the front-end owns and validates the
-    board schema and it can evolve without server changes.
+    Per-card keys let Yjs merge concurrent edits to different cards. Values stay
+    opaque JSON, so the front-end owns the schema and can evolve it alone.
     """
 
     _TASK_PREFIX = "task:"
@@ -98,21 +70,17 @@ class YBoard(YBaseDoc):
 
     @property
     def version(self) -> str:
-        """Document version, kept in sync with ``Board.version`` (src/boardModel.ts)."""
+        """Kept in sync with ``Board.version`` (src/boardModel.ts)."""
         return "1.0.0"
 
     def _get_board(self) -> dict:
         """Reconstruct the board object from the granular content keys.
 
-        Cards are emitted sorted by id. The keys of a ``pycrdt.Map`` come back
-        in the map's own order, which is not the order they were inserted in and
-        can differ between two documents holding the same board — so without an
-        explicit sort, ``get()`` is non-deterministic and every save reshuffles
-        the ``tasks`` array on disk. The order carries no meaning (cards are
-        placed by ``columnId`` and ``order``), so sorting is free and makes the
-        serialization canonical. ``Board.getBoard`` in src/boardModel.ts sorts
-        the same way, so a file written by the front end and one written by the
-        server are byte-identical.
+        Cards are sorted by id: a ``pycrdt.Map`` returns keys in its own order,
+        so without this every save reshuffles ``tasks`` on disk. Card order
+        carries no meaning (they are placed by ``columnId`` and ``order``).
+        ``Board.getBoard`` sorts the same way, so files written by the front end
+        and by the server are byte-identical.
         """
         keys = set(self._ycontent.keys())
 
@@ -124,11 +92,8 @@ class YBoard(YBaseDoc):
                     tasks.append(task)
         tasks.sort(key=lambda t: str(t.get("id", "")) if isinstance(t, dict) else "")
 
-        # Insertion order here is the key order of the emitted JSON, and must
-        # match `Board.getBoard` in src/boardModel.ts: version, columns,
-        # categories, people, tasks. A missing key is left out entirely,
-        # mirroring the
-        # `undefined` fallback there (JSON.stringify drops those).
+        # Key order must match `Board.getBoard`; a missing key is left out
+        # entirely, mirroring the `undefined` fallback there.
         board = {"version": 1}
         for key in ("columns", "categories", "people"):
             if key in keys:
@@ -137,21 +102,18 @@ class YBoard(YBaseDoc):
         return board
 
     def get(self) -> str:
-        """Serialize the shared document to the on-disk ``.naavretb`` string.
+        """Serialize to the on-disk ``.naavretb`` string, called when saving.
 
-        Called by the server when saving. Produces the same ``{"board": ...}``
-        JSON the front-end writes, so files stay identical whether saved with or
-        without collaboration enabled.
+        Produces the same ``{"board": ...}`` JSON the front-end writes, so files
+        match with or without collaboration enabled.
         """
         return json.dumps({"board": self._get_board()}, indent=2)
 
     def set(self, value: str) -> None:
-        """Populate the shared document from the on-disk ``.naavretb`` string.
+        """Populate the shared document from the on-disk string, when loading.
 
-        Called by the server when loading the file. Splits the board across the
-        granular keys the front-end reads back (src/boardModel.ts ``getBoard``),
-        writing only the keys that changed and dropping the keys of cards that
-        are no longer present.
+        Splits the board across the granular keys the front-end reads back,
+        writing only changed keys and dropping those of removed cards.
         """
         contents = _parse_json(value, {})
         board = contents.get("board", {}) if isinstance(contents, dict) else {}

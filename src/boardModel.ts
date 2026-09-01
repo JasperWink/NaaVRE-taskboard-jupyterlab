@@ -1,13 +1,10 @@
-// Collaborative document model for the task board. Backing the board with a
-// shared Yjs document (rather than the browser-local state DB) is what makes it
-// sync across clients over RTC.
+// Collaborative document model for the task board: a shared Yjs document, so
+// the board syncs across clients over RTC.
 //
-// The board state is stored under granular keys in the `content` map —
-// 'columns', 'categories' and 'people' as JSON arrays, plus one JSON object per
-// card under 'task:<id>'. Writing only the keys that changed lets Yjs merge
-// concurrent edits to different cards, instead of last-write-wins on the whole
-// board. The front-end (src/components/taskBoard) owns and validates the board
-// schema.
+// The `content` map holds 'columns', 'categories' and 'people' as JSON arrays,
+// plus one JSON object per card under 'task:<id>'. Writing only the changed
+// keys lets Yjs merge concurrent edits to different cards. The front-end
+// (src/components/taskBoard) owns the schema.
 
 import { YDocument, DocumentChange } from '@jupyter/ydoc';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
@@ -19,11 +16,9 @@ import { IBoardState } from './components/taskBoard/types';
 import { normalizeBoard } from './components/taskBoard/boardStore';
 
 /**
- * Content type of board documents. Must match the file-type registration and
- * shared-model factory in src/index.ts and the jupyter_ydoc entry point in
- * pyproject.toml (NaaVRE_taskboard_jupyterlab.ydoc:YBoard) — a mismatch makes
- * the server fall back to the generic YFile and the board silently stops
- * syncing.
+ * Content type of board documents. Must match src/index.ts and the
+ * jupyter_ydoc entry point in pyproject.toml — on a mismatch the server falls
+ * back to YFile and the board silently stops syncing.
  */
 export const BOARD_CONTENT_TYPE = 'naavretbdoc' as Contents.ContentType;
 
@@ -45,19 +40,15 @@ export type BoardChange = {
   boardChange?: boolean;
 } & DocumentChange;
 
-/**
- * DocumentModel holding the task board content of a `.naavretb` file.
- */
+/** DocumentModel holding the task board content of a `.naavretb` file. */
 export class BoardModel extends SharedDocumentModel<BoardChange, Board> {
   constructor(options: DocumentRegistry.IModelOptions<Board>) {
     super(options, () => Board.create());
   }
 
   /**
-   * The board state (parsed and normalized from the shared document). The
-   * normalized object is cached until the shared document changes, so
-   * repeated reads (one per render) are cheap and keep a stable identity for
-   * React memoization.
+   * The board state, parsed and normalized. Cached until the shared document
+   * changes, so repeated reads are cheap and keep a stable identity for React.
    */
   get board(): IBoardState {
     if (this._boardCache === null) {
@@ -80,9 +71,8 @@ export class BoardModel extends SharedDocumentModel<BoardChange, Board> {
 }
 
 /**
- * SharedModel for the task board. Structure mirrors YBoard on the server
- * (NaaVRE_taskboard_jupyterlab/ydoc.py): a `content` map holding the board
- * under granular JSON-string keys (see the header comment).
+ * SharedModel for the task board. Mirrors YBoard on the server
+ * (NaaVRE_taskboard_jupyterlab/ydoc.py); see the header for the key layout.
  */
 export class Board extends YDocument<BoardChange> {
   constructor() {
@@ -94,15 +84,10 @@ export class Board extends YDocument<BoardChange> {
   readonly version: string = '1.0.0';
 
   /**
-   * Reconstruct the raw (pre-normalization) board object from the granular
-   * keys. Corrupt values degrade to defaults instead of throwing; the caller
-   * runs the result through `normalizeBoard`.
-   *
-   * Cards come out sorted by id: `Y.Map` iterates in its own order, not
-   * insertion order, so without an explicit sort every save reshuffles the
-   * `tasks` array on disk. The order carries no meaning (cards are placed by
-   * `columnId` and `order`), so sorting is free and makes the serialization
-   * canonical. `YBoard._get_board` on the server sorts the same way.
+   * Reconstruct the raw board object from the granular keys; corrupt values
+   * degrade to defaults. Cards are sorted by id because `Y.Map` iterates in
+   * its own order, which would otherwise reshuffle `tasks` on every save.
+   * `YBoard._get_board` sorts the same way.
    */
   getBoard(): unknown {
     const tasks: any[] = [];
@@ -127,10 +112,9 @@ export class Board extends YDocument<BoardChange> {
   }
 
   /**
-   * Write the board, touching only the keys whose value actually changed and
-   * deleting keys of removed cards. Concurrent edits to different cards then
-   * live on different Yjs keys and merge instead of overwriting each other;
-   * a no-op update writes nothing (and does not mark the document dirty).
+   * Write the board, touching only changed keys and deleting keys of removed
+   * cards, so concurrent edits to different cards merge. A no-op writes
+   * nothing and leaves the document clean.
    */
   setBoard(value: IBoardState): void {
     const desired = new Map<string, string>();
@@ -141,7 +125,7 @@ export class Board extends YDocument<BoardChange> {
       desired.set(TASK_KEY_PREFIX + task.id, JSON.stringify(task));
     });
     this.transact(() => {
-      // Removes the keys of tasks that are no longer on the board.
+      // Drop the keys of tasks no longer on the board.
       Array.from(this._content.keys()).forEach(key => {
         if (!desired.has(key)) {
           this._content.delete(key);
@@ -155,17 +139,12 @@ export class Board extends YDocument<BoardChange> {
     });
   }
 
-  /**
-   * Get the document source: the on-disk `.naavretb` string.
-   */
+  /** The on-disk `.naavretb` string. */
   getSource(): string {
     return JSON.stringify({ board: this.getBoard() }, null, 2);
   }
 
-  /**
-   * Set the document source from the on-disk `.naavretb` string. A corrupt
-   * file degrades to an empty board instead of failing to open.
-   */
+  /** Load from the on-disk string; a corrupt file degrades to an empty board. */
   setSource(value: string): void {
     const contents = parseJson(value, {});
     const board =
@@ -173,9 +152,7 @@ export class Board extends YDocument<BoardChange> {
     this.setBoard(normalizeBoard(board));
   }
 
-  /**
-   * Dispose of the resources.
-   */
+  /** Dispose of the resources. */
   dispose(): void {
     if (this.isDisposed) {
       return;
@@ -184,11 +161,7 @@ export class Board extends YDocument<BoardChange> {
     super.dispose();
   }
 
-  /**
-   * Static method to create instances on the sharedModel
-   *
-   * @returns The sharedModel instance
-   */
+  /** Factory for the shared model. */
   static create(): Board {
     return new Board();
   }
