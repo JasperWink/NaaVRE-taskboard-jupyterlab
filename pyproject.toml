@@ -34,7 +34,7 @@ dynamic = ["version", "description", "authors", "urls", "keywords"]
 # line does not accept; moving up means the jupyter-collaboration 5.0 line.
 [project.optional-dependencies]
 collaboration = [
-    "jupyter-collaboration>=4.4.2,<4.5",
+    "jupyter-collaboration>=5.0.2,<5.1",
     "jupyter-collaboration-ui>=2.4.2,<2.5",
     "jupyter-docprovider>=2.4.2,<2.5",
     "jupyterlab>=4.5,<4.6",
@@ -43,7 +43,7 @@ test = [
     "pytest>=7",
     # tests/test_ydoc.py needs jupyter_ydoc present to check that our entry
     # point resolves to YBoard rather than the generic YFile.
-    "jupyter-collaboration>=4.4.2,<4.5",
+    "jupyter-collaboration>=5.0.2,<5.1",
 ]
 
 # Register the server-side shared document for .naavretb files. The
