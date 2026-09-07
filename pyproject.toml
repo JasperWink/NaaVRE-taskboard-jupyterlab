@@ -40,7 +40,7 @@ collaboration = [
     "jupyterlab>=4.5,<4.6",
 ]
 test = [
-    "pytest>=7",
+    "pytest>=9.1.1",
     # tests/test_ydoc.py needs jupyter_ydoc present to check that our entry
     # point resolves to YBoard rather than the generic YFile.
     "jupyter-collaboration>=4.4.2,<4.5",
