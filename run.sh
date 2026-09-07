@@ -57,9 +57,18 @@ say() { printf '\033[1;34m==> [taskboard]\033[0m %s\n' "$*"; }
 [ -f .yarnrc.yml ] || echo "nodeLinker: node-modules" > .yarnrc.yml
 rm -f .pnp.cjs .pnp.loader.mjs
 
+# jupyter-collaboration >= 4.4.2, which carries the fix for GHSA-8w8w-78q2-76qw,
+# requires Python 3.10+. Override with e.g. PYTHON=python3.12 ./run.sh.
+PYTHON="${PYTHON:-python3}"
+
 if [ ! -d "$VENV" ]; then
+  if ! "$PYTHON" -c 'import sys; sys.exit(sys.version_info < (3, 10))'; then
+    echo "$PYTHON is $("$PYTHON" -V 2>&1); jupyter-collaboration needs 3.10+." >&2
+    echo "Re-run as: PYTHON=python3.12 $0 $*" >&2
+    exit 1
+  fi
   say "Creating $VENV (this takes a few minutes)"
-  python3 -m venv "$VENV"
+  "$PYTHON" -m venv "$VENV"
   "$VENV/bin/python" -m pip install --upgrade pip wheel
   "$VENV/bin/python" -m pip install 'jupyterlab>=4.0.0,<5'
 fi
@@ -70,6 +79,11 @@ export PATH="$VENV/bin:$PATH"
 # [collaboration] extra pulls in jupyter-collaboration; without it the board
 # still works, but each client edits its own copy of the file instead of one
 # shared document — which is the whole point of the board.
+# `labextension develop` symlinks the venv's labextension path at this repo, so
+# a later `pip install -e` writes its install.json shared-data into the source
+# tree; hatchling then sees that path twice and refuses to build the wheel.
+rm -f NaaVRE_taskboard_jupyterlab/labextension/install.json
+
 # Install, and re-install whenever the packaging metadata changes. Entry points
 # and dependencies are registered at *install* time, not at build time, so after
 # a `git pull` that touches pyproject.toml a plain rebuild would leave this
@@ -98,7 +112,16 @@ fi
 # repo's build output. It is idempotent and cheap.
 "$VENV/bin/jupyter" labextension develop . --overwrite > /dev/null
 
-[ -d node_modules ] || { say "Installing node dependencies"; jlpm install; }
+# Re-install when package.json changes too, not just when node_modules is
+# missing: a dependency bump would otherwise build against the old resolution.
+PKG_SHA=$("$VENV/bin/python" -c \
+  "import hashlib;print(hashlib.sha256(open('package.json','rb').read()).hexdigest())")
+PKG_STAMP="node_modules/.package-json.sha256"
+if [ ! -d node_modules ] || [ "$(cat "$PKG_STAMP" 2>/dev/null)" != "$PKG_SHA" ]; then
+  say "Installing node dependencies"
+  jlpm install
+  echo "$PKG_SHA" > "$PKG_STAMP"
+fi
 
 if [ "$BUILD" = "1" ] && [ "$WATCH" = "0" ]; then
   say "Building"
